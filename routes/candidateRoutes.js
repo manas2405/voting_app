@@ -1,8 +1,9 @@
 const express = require('express');
-const router = exress.Router();
+const router = express.Router();
 const User  =  require('../models/user');
 const Candidate = require('../models/candidate');
-const { parseMIMEType } = require('undici-types');
+
+const { jwtAuthMiddleware } = require('../middleware/auth');
 
 const checkUserAdmin = async(userId)=>{
     try{
@@ -14,7 +15,7 @@ const checkUserAdmin = async(userId)=>{
     }
 }
 
-router.post('/',async(req,res)=>{
+router.post('/',jwtAuthMiddleware,async(req,res)=>{
     try{
         if(! await checkUserAdmin(req.user.id)){
            return res.status(400).json({message : "Only admin can access"})
@@ -37,7 +38,7 @@ router.post('/',async(req,res)=>{
 })
 
 
-router.put('/:candidateID',async(req,res)=>{
+router.put('/:candidateID',jwtAuthMiddleware,async(req,res)=>{
     try{
         if(!checkUserAdmin(req.user.id)){
             return   res.status(400).json({message : "Only admin can access"})
@@ -66,7 +67,7 @@ router.put('/:candidateID',async(req,res)=>{
     }
 })
 
-router.delete('/:candidateID',async(req,res)=>{
+router.delete('/:candidateID',jwtAuthMiddleware,async(req,res)=>{
     try{
         if(!checkUserAdmin(req.user.id)){
             return   res.status(400).json({message : "Only admin can access"})
@@ -91,7 +92,7 @@ router.delete('/:candidateID',async(req,res)=>{
 
 })
 
-router.post('/vote/:candidateID',async(req,res)=>{
+router.post('/vote/:candidateID',jwtAuthMiddleware,async(req,res)=>{
     const candidateID = req.params.id;
     const userID =req.user.id;
     try{
@@ -153,25 +154,16 @@ router.get('/vote/count',async(req,res)=>{
 }
 })
 
+router.get('/',async(req,res)=>{
+    try{
+        const candidate = await Candidate.find({},'name party-_id')
+         return res.status(200).json(candidate);
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+})
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-exports.module = router;
+module.exports = router;
